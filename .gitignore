@@ -1,0 +1,5 @@
+node_modules/
+session.json
+progress.json
+daily-counts.json
+debug-*.png

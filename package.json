@@ -1,0 +1,18 @@
+{
+  "name": "apollo-linkedin-automator",
+  "version": "1.0.0",
+  "description": "Executes Apollo LinkedIn tasks (connect requests, messages) via Playwright",
+  "main": "linkedin-tasks.js",
+  "scripts": {
+    "dashboard": "node server.js",
+    "cli": "node linkedin-tasks.js",
+    "dry-run": "node linkedin-tasks.js --dry-run",
+    "setup": "node setup-session.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "playwright": "^1.59.1",
+    "ws": "^8.20.0"
+  }
+}

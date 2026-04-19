@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apollo LinkedIn Automator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen font-mono text-sm">
+  <div class="max-w-5xl mx-auto p-6 space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <h1 class="text-xl font-bold text-white">Apollo LinkedIn Automator</h1>
+      <div id="status-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-700 text-gray-300">Idle</div>
+    </div>
+
+    <!-- Session -->
+    <div class="bg-gray-900 rounded-xl p-4 border border-gray-800 flex items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-2">
+        <div id="session-dot" class="w-2 h-2 rounded-full bg-red-500"></div>
+        <span id="session-label" class="text-xs text-gray-400">No session</span>
+      </div>
+      <!-- idle state -->
+      <div id="setup-idle" class="flex gap-2">
+        <button id="btn-connect"
+          class="px-4 py-1.5 rounded bg-green-700 hover:bg-green-600 text-white text-xs font-semibold transition">
+          Connect
+        </button>
+      </div>
+      <!-- browser open state -->
+      <div id="setup-open" class="hidden flex items-center gap-3 flex-wrap">
+        <div class="flex items-center gap-2">
+          <svg id="setup-spinner" class="animate-spin w-3.5 h-3.5 text-yellow-400" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <span id="setup-instruction" class="text-xs text-yellow-300">
+            Step 1: Log in to Apollo. Step 2: Open a new tab and log in to LinkedIn. Then click Save.
+          </span>
+        </div>
+        <button id="btn-save-session"
+          class="flex items-center gap-1.5 px-4 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed">
+          <svg id="save-spinner" class="hidden animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <span id="save-btn-label">Save Session</span>
+        </button>
+        <button id="btn-cancel-session"
+          class="px-3 py-1.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs transition">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- Daily usage -->
+    <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
+      <div class="text-gray-500 text-xs mb-3">Today's usage</div>
+      <div class="flex gap-8">
+        <div>
+          <div class="text-xs text-gray-500 mb-1">Connects</div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="daily-connects" class="text-2xl font-bold text-indigo-400">0</span>
+            <span class="text-gray-600">/</span>
+            <span id="daily-connects-limit" class="text-gray-400">30</span>
+          </div>
+          <div class="mt-1.5 h-1.5 w-40 bg-gray-800 rounded-full overflow-hidden">
+            <div id="daily-connects-bar" class="h-full bg-indigo-500 rounded-full transition-all" style="width:0%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500 mb-1">Messages</div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="daily-messages" class="text-2xl font-bold text-teal-400">0</span>
+            <span class="text-gray-600">/</span>
+            <span id="daily-messages-limit" class="text-gray-400">50</span>
+          </div>
+          <div class="mt-1.5 h-1.5 w-40 bg-gray-800 rounded-full overflow-hidden">
+            <div id="daily-messages-bar" class="h-full bg-teal-500 rounded-full transition-all" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800 space-y-4">
+      <div class="flex flex-wrap items-end gap-4">
+        <div class="space-y-1">
+          <label class="text-gray-400 text-xs">Max actions this run</label>
+          <input id="max-actions" type="number" min="1" max="100" value="30"
+            class="w-24 bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div class="space-y-1">
+          <label class="text-gray-400 text-xs">Daily connect limit</label>
+          <input id="max-daily-connects" type="number" min="1" max="100" value="30"
+            class="w-24 bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div class="space-y-1">
+          <label class="text-gray-400 text-xs">Daily message limit</label>
+          <input id="max-daily-messages" type="number" min="1" max="200" value="50"
+            class="w-24 bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer pb-1">
+          <input id="dry-run" type="checkbox" class="w-4 h-4 accent-indigo-500">
+          <span class="text-gray-300">Dry run</span>
+        </label>
+        <button id="btn-start"
+          class="px-5 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed">
+          Start
+        </button>
+        <button id="btn-stop" disabled
+          class="px-5 py-1.5 rounded bg-red-700 hover:bg-red-600 text-white font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed">
+          Stop
+        </button>
+        <button id="btn-refresh"
+          class="px-4 py-1.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 transition text-xs">
+          Refresh queue
+        </button>
+      </div>
+
+      <!-- Run stats bar -->
+      <div id="stats-bar" class="hidden flex gap-6 text-xs pt-1">
+        <span class="text-green-400">Sent <span id="stat-sent" class="font-bold">0</span></span>
+        <span class="text-yellow-400">Skipped <span id="stat-skipped" class="font-bold">0</span></span>
+        <span class="text-red-400">Failed <span id="stat-failed" class="font-bold">0</span></span>
+        <span class="text-gray-400">Total <span id="stat-total" class="font-bold">0</span></span>
+      </div>
+    </div>
+
+    <!-- Live log -->
+    <div class="bg-gray-900 rounded-xl border border-gray-800">
+      <div class="px-4 py-2 border-b border-gray-800 text-gray-400 text-xs flex justify-between items-center">
+        <span>Live log</span>
+        <button id="btn-clear-log" class="text-gray-600 hover:text-gray-400 transition">Clear</button>
+      </div>
+      <div id="log" class="h-48 overflow-y-auto p-4 space-y-0.5 text-xs leading-5"></div>
+    </div>
+
+    <!-- Queue table -->
+    <div class="bg-gray-900 rounded-xl border border-gray-800">
+      <div class="px-4 py-2 border-b border-gray-800 text-gray-400 text-xs flex justify-between items-center">
+        <span>Task queue — <span id="queue-count">loading...</span></span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="border-b border-gray-800 text-gray-500">
+              <th class="px-4 py-2 text-left w-8">#</th>
+              <th class="px-4 py-2 text-left">Name</th>
+              <th class="px-4 py-2 text-left w-24">Type</th>
+              <th class="px-4 py-2 text-left">LinkedIn URL</th>
+              <th class="px-4 py-2 text-left">Note</th>
+              <th class="px-4 py-2 text-left w-16"></th>
+            </tr>
+          </thead>
+          <tbody id="queue-body" class="divide-y divide-gray-800/50"></tbody>
+        </table>
+        <div id="queue-empty" class="hidden px-4 py-8 text-center text-gray-600">No tasks found.</div>
+      </div>
+    </div>
+
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
