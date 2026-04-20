@@ -115,7 +115,7 @@ app.post('/api/setup-session/cancel', async (req, res) => {
 
 app.get('/api/tasks', async (req, res) => {
   try {
-    const { tasks, total } = await fetchLinkedInTasks(getApiKey(), 1, 200);
+    const { tasks, total } = await fetchLinkedInTasks(getApiKey(), 1, 100);
     res.json({ tasks, total });
   } catch (err) {
     res.status(500).json({ error: err.message });
