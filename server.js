@@ -54,20 +54,38 @@ const runState = {
   stats: { sent: 0, skipped: 0, failed: 0, total: 0 },
 };
 
-// Session setup state — one setup flow at a time
-const setupState = { context: null };
+// Shared persistent browser context — stays open across Connect + Run so the user
+// can watch the LinkedIn actions happen in the same window they logged in with.
+const browserState = { context: null, launching: null };
+
+async function getBrowser() {
+  if (browserState.context) return browserState.context;
+  if (browserState.launching) return browserState.launching;
+  browserState.launching = chromium.launchPersistentContext(PROFILE_DIR, {
+    headless: false,
+    channel: 'chrome',
+    viewport: null,
+  }).then(ctx => {
+    browserState.context = ctx;
+    browserState.launching = null;
+    ctx.on('close', () => {
+      browserState.context = null;
+      broadcast({ type: 'setup', phase: 'idle' });
+    });
+    return ctx;
+  }).catch(err => {
+    browserState.launching = null;
+    throw err;
+  });
+  return browserState.launching;
+}
 
 app.post('/api/setup-session', async (req, res) => {
-  if (setupState.context) return res.status(409).json({ error: 'Setup already in progress' });
   try {
-    const context = await chromium.launchPersistentContext(PROFILE_DIR, {
-      headless: false,
-      channel: 'chrome',
-      viewport: null,
-    });
+    const context = await getBrowser();
     const page = context.pages()[0] || await context.newPage();
-    await page.goto('https://app.apollo.io/#/login');
-    setupState.context = context;
+    await page.bringToFront().catch(() => {});
+    await page.goto('https://app.apollo.io/#/login').catch(() => {});
     broadcast({ type: 'setup', phase: 'open' });
     res.json({ ok: true });
   } catch (err) {
@@ -76,11 +94,8 @@ app.post('/api/setup-session', async (req, res) => {
 });
 
 app.post('/api/setup-session/save', async (req, res) => {
-  if (!setupState.context) return res.status(400).json({ error: 'No setup in progress' });
   try {
     fs.writeFileSync(PROFILE_SAVED_FLAG, '');
-    await setupState.context.close();
-    setupState.context = null;
     broadcast({ type: 'setup', phase: 'saved' });
     broadcast({ type: 'status', running: runState.running, stats: runState.stats, hasSession: true });
     res.json({ ok: true });
@@ -90,9 +105,9 @@ app.post('/api/setup-session/save', async (req, res) => {
 });
 
 app.post('/api/setup-session/cancel', async (req, res) => {
-  if (setupState.context) {
-    await setupState.context.close().catch(() => {});
-    setupState.context = null;
+  if (browserState.context) {
+    await browserState.context.close().catch(() => {});
+    browserState.context = null;
   }
   broadcast({ type: 'setup', phase: 'idle' });
   res.json({ ok: true });
@@ -121,23 +136,24 @@ function startRun({ maxActions, dryRun, maxDailyConnects, maxDailyMessages, spec
   runState.stats = { sent: 0, skipped: 0, failed: 0, total: 0 };
   broadcast({ type: 'status', running: true, stats: runState.stats, hasSession: hasSession() });
 
-  runTasks({
-    apiKey: getApiKey(),
-    profileDir: PROFILE_DIR,
-    progressPath: PROGRESS_PATH,
-    dailyCountsPath: DAILY_PATH,
-    maxActions,
-    maxDailyConnects,
-    maxDailyMessages,
-    dryRun,
-    specificTasks: specificTasks || null,
-    onEvent: evt => {
-      broadcast(evt);
-      if (evt.type === 'stats') runState.stats = { sent: evt.sent, skipped: evt.skipped, failed: evt.failed, total: evt.total };
-      if (evt.type === 'done') runState.stats = { sent: evt.sent, skipped: evt.skipped, failed: evt.failed, total: evt.total };
-    },
-    shouldStop: () => runState.stopRequested,
-  })
+  getBrowser()
+    .then(context => runTasks({
+      apiKey: getApiKey(),
+      context,
+      progressPath: PROGRESS_PATH,
+      dailyCountsPath: DAILY_PATH,
+      maxActions,
+      maxDailyConnects,
+      maxDailyMessages,
+      dryRun,
+      specificTasks: specificTasks || null,
+      onEvent: evt => {
+        broadcast(evt);
+        if (evt.type === 'stats') runState.stats = { sent: evt.sent, skipped: evt.skipped, failed: evt.failed, total: evt.total };
+        if (evt.type === 'done') runState.stats = { sent: evt.sent, skipped: evt.skipped, failed: evt.failed, total: evt.total };
+      },
+      shouldStop: () => runState.stopRequested,
+    }))
     .catch(err => broadcast({ type: 'log', message: `Fatal: ${err.message}` }))
     .finally(() => {
       runState.running = false;
