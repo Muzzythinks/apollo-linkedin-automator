@@ -117,7 +117,7 @@ function logColor(message) {
 }
 
 function setRunning(running) {
-  const allRowBtns = queueBody.querySelectorAll('button.run-task-btn');
+  const allRowBtns = queueBody.querySelectorAll('button.run-task-btn, button.done-task-btn');
   if (running) {
     statusBadge.textContent = 'Running';
     statusBadge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-green-900 text-green-300';
@@ -200,23 +200,56 @@ function renderQueue(tasks) {
         ${url ? `<a href="${esc(url)}" target="_blank" class="hover:text-indigo-400 transition truncate block max-w-xs">${esc(url)}</a>` : '<span class="text-gray-700">—</span>'}
       </td>
       <td class="px-4 py-2 text-gray-500 max-w-xs truncate">${esc((t.note || '').slice(0, 80))}</td>
-      <td class="px-4 py-2">
+      <td class="px-4 py-2 space-x-1 whitespace-nowrap">
         <button class="run-task-btn px-2 py-0.5 rounded bg-gray-700 hover:bg-indigo-700 text-gray-300 hover:text-white transition text-xs" data-id="${esc(t.id)}">Run</button>
+        <button class="done-task-btn px-2 py-0.5 rounded bg-gray-700 hover:bg-green-700 text-gray-300 hover:text-white transition text-xs" data-id="${esc(t.id)}" title="Mark this task done in Apollo without running the LinkedIn automation">Done</button>
       </td>
     `;
     rowMap[t.id] = tr;
     queueBody.appendChild(tr);
   });
 
-  // Delegate click for Run buttons
+  // Delegate click for Run + Done buttons
   queueBody.addEventListener('click', e => {
-    const btn = e.target.closest('.run-task-btn');
-    if (!btn) return;
-    const taskId = btn.dataset.id;
-    const task = taskDataMap[taskId];
-    if (!task) return;
-    runSingleTask(task);
+    const runBtn = e.target.closest('.run-task-btn');
+    if (runBtn) {
+      const task = taskDataMap[runBtn.dataset.id];
+      if (task) runSingleTask(task);
+      return;
+    }
+    const doneBtn = e.target.closest('.done-task-btn');
+    if (doneBtn) markTaskDone(doneBtn.dataset.id, doneBtn);
   });
+}
+
+async function markTaskDone(taskId, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  try {
+    const res = await fetch('/api/mark-done', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskId }),
+    });
+    if (!res.ok) {
+      const { error } = await res.json().catch(() => ({ error: 'Unknown error' }));
+      appendLog(`Mark-done failed: ${error}`, 'text-red-400');
+      if (btn) { btn.disabled = false; btn.textContent = 'Done'; }
+    }
+  } catch (err) {
+    appendLog(`Mark-done failed: ${err.message}`, 'text-red-400');
+    if (btn) { btn.disabled = false; btn.textContent = 'Done'; }
+  }
+}
+
+function removeRow(taskId) {
+  const tr = rowMap[taskId];
+  if (!tr) return;
+  tr.remove();
+  delete rowMap[taskId];
+  delete taskDataMap[taskId];
+  const remaining = Object.keys(rowMap).length;
+  queueCount.textContent = `${remaining} task${remaining === 1 ? '' : 's'}`;
+  if (remaining === 0) queueEmpty.classList.remove('hidden');
 }
 
 function esc(str) {
@@ -286,14 +319,17 @@ function connectWS() {
     if (evt.type === 'daily') {
       updateDailyUI(evt.counts);
     }
-    if (evt.type === 'task_start' && evt.task) {
-      highlightRow(evt.task.id, 'bg-indigo-900/20');
+    if (evt.type === 'task_start' && (evt.taskId || evt.task)) {
+      highlightRow(evt.taskId || evt.task.id, 'bg-indigo-900/20');
       statusBadge.textContent = `Running: task ${evt.index} of ${evt.total}`;
     }
     if (evt.type === 'task_done') {
       const colorMap = { sent: 'bg-green-900/20', failed: 'bg-red-900/20', skipped: 'bg-yellow-900/20', already_connected: 'bg-green-900/20' };
-      const taskId = Object.keys(rowMap)[evt.index - 1];
+      const taskId = evt.taskId || Object.keys(rowMap)[evt.index - 1];
       if (taskId) highlightRow(taskId, colorMap[evt.outcome] || '');
+    }
+    if (evt.type === 'task_removed' && evt.taskId) {
+      removeRow(evt.taskId);
     }
     if (evt.type === 'done') {
       updateStats(evt);

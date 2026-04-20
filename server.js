@@ -8,7 +8,7 @@ const { chromium } = require('playwright');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { runTasks, fetchLinkedInTasks, loadDailyCounts } = require('./lib/runner');
+const { runTasks, fetchLinkedInTasks, markTaskDone, loadProgress, saveProgress, loadDailyCounts } = require('./lib/runner');
 
 const PROFILE_DIR = path.join(__dirname, 'chrome-profile');
 const PROFILE_SAVED_FLAG = path.join(PROFILE_DIR, '.saved');
@@ -188,6 +188,22 @@ app.post('/api/run-task', (req, res) => {
     specificTasks: [req.body.task],
   });
   res.json({ ok: true });
+});
+
+app.post('/api/mark-done', async (req, res) => {
+  const taskId = req.body.taskId;
+  if (!taskId) return res.status(400).json({ error: 'taskId required' });
+  try {
+    const completed = loadProgress(PROGRESS_PATH);
+    completed.add(taskId);
+    saveProgress(PROGRESS_PATH, completed);
+    await markTaskDone(getApiKey(), taskId, false, evt => broadcast(evt));
+    broadcast({ type: 'task_removed', taskId });
+    res.json({ ok: true });
+  } catch (err) {
+    broadcast({ type: 'log', message: `Mark-done failed: ${err.message}` });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/stop', (req, res) => {
