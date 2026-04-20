@@ -10,7 +10,8 @@ const fs = require('fs');
 const path = require('path');
 const { runTasks, fetchLinkedInTasks, loadDailyCounts } = require('./lib/runner');
 
-const SESSION_PATH = path.join(__dirname, 'session.json');
+const PROFILE_DIR = path.join(__dirname, 'chrome-profile');
+const PROFILE_SAVED_FLAG = path.join(PROFILE_DIR, '.saved');
 const PROGRESS_PATH = path.join(__dirname, 'progress.json');
 const DAILY_PATH = path.join(__dirname, 'daily-counts.json');
 const PORT = 3000;
@@ -22,7 +23,7 @@ function getApiKey() {
 }
 
 function hasSession() {
-  return fs.existsSync(SESSION_PATH);
+  return fs.existsSync(PROFILE_SAVED_FLAG);
 }
 
 const app = express();
@@ -54,16 +55,18 @@ const runState = {
 };
 
 // Session setup state — one setup flow at a time
-const setupState = { browser: null, context: null };
+const setupState = { context: null };
 
 app.post('/api/setup-session', async (req, res) => {
-  if (setupState.browser) return res.status(409).json({ error: 'Setup already in progress' });
+  if (setupState.context) return res.status(409).json({ error: 'Setup already in progress' });
   try {
-    const browser = await chromium.launch({ headless: false, channel: 'chrome' });
-    const context = await browser.newContext();
-    const page = await context.newPage();
+    const context = await chromium.launchPersistentContext(PROFILE_DIR, {
+      headless: false,
+      channel: 'chrome',
+      viewport: null,
+    });
+    const page = context.pages()[0] || await context.newPage();
     await page.goto('https://app.apollo.io/#/login');
-    setupState.browser = browser;
     setupState.context = context;
     broadcast({ type: 'setup', phase: 'open' });
     res.json({ ok: true });
@@ -75,9 +78,8 @@ app.post('/api/setup-session', async (req, res) => {
 app.post('/api/setup-session/save', async (req, res) => {
   if (!setupState.context) return res.status(400).json({ error: 'No setup in progress' });
   try {
-    await setupState.context.storageState({ path: SESSION_PATH });
-    await setupState.browser.close();
-    setupState.browser = null;
+    fs.writeFileSync(PROFILE_SAVED_FLAG, '');
+    await setupState.context.close();
     setupState.context = null;
     broadcast({ type: 'setup', phase: 'saved' });
     broadcast({ type: 'status', running: runState.running, stats: runState.stats, hasSession: true });
@@ -88,9 +90,8 @@ app.post('/api/setup-session/save', async (req, res) => {
 });
 
 app.post('/api/setup-session/cancel', async (req, res) => {
-  if (setupState.browser) {
-    await setupState.browser.close().catch(() => {});
-    setupState.browser = null;
+  if (setupState.context) {
+    await setupState.context.close().catch(() => {});
     setupState.context = null;
   }
   broadcast({ type: 'setup', phase: 'idle' });
@@ -122,7 +123,7 @@ function startRun({ maxActions, dryRun, maxDailyConnects, maxDailyMessages, spec
 
   runTasks({
     apiKey: getApiKey(),
-    sessionPath: SESSION_PATH,
+    profileDir: PROFILE_DIR,
     progressPath: PROGRESS_PATH,
     dailyCountsPath: DAILY_PATH,
     maxActions,

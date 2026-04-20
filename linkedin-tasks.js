@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const { runTasks } = require('./lib/runner');
 
-const SESSION_PATH = path.join(__dirname, 'session.json');
+const PROFILE_DIR = path.join(__dirname, 'chrome-profile');
 const PROGRESS_PATH = path.join(__dirname, 'progress.json');
 
 const APOLLO_API_KEY = process.env.APOLLO_API_KEY;
@@ -22,8 +22,8 @@ if (!APOLLO_API_KEY || APOLLO_API_KEY === 'YOUR_APOLLO_API_KEY_HERE') {
   console.error('Set APOLLO_API_KEY in your .env file.');
   process.exit(1);
 }
-if (!fs.existsSync(SESSION_PATH)) {
-  console.error('session.json not found. Use the dashboard Connect button or run setup-session.js.');
+if (!fs.existsSync(path.join(PROFILE_DIR, '.saved'))) {
+  console.error('chrome-profile/ not found. Use the dashboard Connect button or run setup-session.js.');
   process.exit(1);
 }
 
@@ -33,7 +33,7 @@ const maxActions = parseInt(args.find(a => a.startsWith('--max='))?.split('=')[1
 
 runTasks({
   apiKey: APOLLO_API_KEY,
-  sessionPath: SESSION_PATH,
+  profileDir: PROFILE_DIR,
   progressPath: PROGRESS_PATH,
   maxActions,
   dryRun,

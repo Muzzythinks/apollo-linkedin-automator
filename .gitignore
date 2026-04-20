@@ -1,5 +1,6 @@
 node_modules/
 session.json
+chrome-profile/
 progress.json
 daily-counts.json
 debug-*.png

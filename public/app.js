@@ -253,6 +253,7 @@ async function runSingleTask(task) {
 // WebSocket
 function connectWS() {
   const ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onopen = () => loadQueue();
   ws.onmessage = ({ data }) => {
     let evt;
     try { evt = JSON.parse(data); } catch { return; }
@@ -273,6 +274,7 @@ function connectWS() {
         btnConnect.textContent = 'Connect';
         document.getElementById('save-spinner').classList.add('hidden');
         document.getElementById('save-btn-label').textContent = 'Save Session';
+        loadQueue();
       }
       if (evt.phase === 'open') {
         appendLog('Browser opened. Log in to Apollo and LinkedIn, then click Save Session.', 'text-yellow-400');

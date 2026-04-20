@@ -41,10 +41,10 @@ The browser opens automatically. Dependencies install themselves on the first ru
 **4. Connect your accounts** (one-time per machine)
 
 1. Click **Connect** in the dashboard
-2. A Chrome window opens — log in to Apollo, then open a new tab and log in to LinkedIn
+2. A Chrome window opens using a dedicated local profile — log in to Apollo, then open a new tab and log in to LinkedIn
 3. Click **Save Session** in the dashboard
 
-Your session is saved locally. If you ever get logged out, click Connect again.
+The profile is stored in `chrome-profile/` and reused on every subsequent run, so you only log in once. If LinkedIn ever forces a re-auth, click Connect again.
 
 ## Running tasks
 
@@ -62,6 +62,6 @@ Your session is saved locally. If you ever get logged out, click Connect again.
 | File | Purpose |
 |---|---|
 | `.env` | Your Apollo API key — fill in the placeholder |
-| `session.json` | Saved login session — gitignored, created via Connect |
+| `chrome-profile/` | Persistent browser profile (stays logged in) — gitignored, created via Connect |
 | `progress.json` | Completed task IDs — gitignored, auto-created |
 | `daily-counts.json` | Today's action counts — gitignored, resets daily |
