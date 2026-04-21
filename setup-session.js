@@ -14,6 +14,9 @@ async function run() {
   const profileDir = path.join(__dirname, 'chrome-profile');
   console.log(`Launching persistent browser profile at ${profileDir}...`);
 
+  for (const name of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
+    try { fs.rmSync(path.join(profileDir, name), { force: true }); } catch {}
+  }
   const context = await chromium.launchPersistentContext(profileDir, {
     headless: false,
     channel: 'chrome',

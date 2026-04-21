@@ -58,9 +58,19 @@ const runState = {
 // can watch the LinkedIn actions happen in the same window they logged in with.
 const browserState = { context: null, launching: null };
 
+function clearStaleProfileLocks(dir) {
+  // Chromium writes SingletonLock/Cookie/Socket to prevent two instances sharing
+  // a profile. If the previous run crashed or was killed, these can linger and
+  // block the next launch. Safe to remove since we own this profile.
+  for (const name of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
+    try { fs.rmSync(path.join(dir, name), { force: true }); } catch {}
+  }
+}
+
 async function getBrowser() {
   if (browserState.context) return browserState.context;
   if (browserState.launching) return browserState.launching;
+  clearStaleProfileLocks(PROFILE_DIR);
   browserState.launching = chromium.launchPersistentContext(PROFILE_DIR, {
     headless: false,
     channel: 'chrome',
