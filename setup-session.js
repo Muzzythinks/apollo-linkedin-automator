@@ -17,6 +17,14 @@ async function run() {
   for (const name of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
     try { fs.rmSync(path.join(profileDir, name), { force: true }); } catch {}
   }
+  try {
+    const prefsPath = path.join(profileDir, 'Default', 'Preferences');
+    const prefs = JSON.parse(fs.readFileSync(prefsPath, 'utf8'));
+    if (!prefs.profile) prefs.profile = {};
+    prefs.profile.exit_type = 'Normal';
+    prefs.profile.exited_cleanly = true;
+    fs.writeFileSync(prefsPath, JSON.stringify(prefs));
+  } catch {}
   const context = await chromium.launchPersistentContext(profileDir, {
     headless: false,
     channel: 'chrome',
@@ -35,7 +43,7 @@ async function run() {
 
   fs.writeFileSync(path.join(profileDir, '.saved'), '');
   await context.close();
-  console.log('Profile saved. Run: node linkedin-tasks.js --dry-run');
+  console.log(`Profile saved. Run: node linkedin-tasks.js`);
 }
 
 run().catch(err => { console.error('Error:', err.message); process.exit(1); });
