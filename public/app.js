@@ -190,12 +190,14 @@ function renderQueue(tasks) {
     tr.className = 'hover:bg-gray-800/40 transition';
     const typeLabel = t.type === 'linkedin_step_connect' ? 'Connect' : t.type === 'linkedin_step_message' ? 'Message' : t.type;
     const url = contact.linkedin_url || '';
+    const due = formatDue(t.due_at);
     tr.innerHTML = `
       <td class="px-4 py-2 text-gray-600">${i + 1}</td>
       <td class="px-4 py-2 text-gray-200 font-medium">${esc(contact.name || 'Unknown')}</td>
       <td class="px-4 py-2">
         <span class="px-1.5 py-0.5 rounded text-xs ${typeLabel === 'Connect' ? 'bg-indigo-900 text-indigo-300' : 'bg-teal-900 text-teal-300'}">${typeLabel}</span>
       </td>
+      <td class="px-4 py-2 ${due.color} whitespace-nowrap" title="${esc(due.title)}">${esc(due.text)}</td>
       <td class="px-4 py-2 text-gray-400 max-w-xs truncate">
         ${url ? `<a href="${esc(url)}" target="_blank" class="hover:text-indigo-400 transition truncate block max-w-xs">${esc(url)}</a>` : '<span class="text-gray-700">—</span>'}
       </td>
@@ -257,6 +259,22 @@ function removeRow(taskId) {
 
 function esc(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function formatDue(iso) {
+  if (!iso) return { text: '—', title: '', color: 'text-gray-700' };
+  const due = new Date(iso);
+  if (isNaN(due)) return { text: '—', title: '', color: 'text-gray-700' };
+  const now = new Date();
+  const diffDays = Math.floor((due - now) / 86400000);
+  const title = due.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  let text, color;
+  if (diffDays <= -1) { text = `${-diffDays}d overdue`; color = 'text-red-400'; }
+  else if (diffDays === 0) { text = 'today'; color = 'text-yellow-300'; }
+  else if (diffDays === 1) { text = 'tomorrow'; color = 'text-gray-300'; }
+  else if (diffDays < 7) { text = `in ${diffDays}d`; color = 'text-gray-400'; }
+  else { text = due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); color = 'text-gray-500'; }
+  return { text, title, color };
 }
 
 function highlightRow(taskId, cls) {
