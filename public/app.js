@@ -209,18 +209,21 @@ function renderQueue(tasks) {
     queueBody.appendChild(tr);
   });
 
-  // Delegate click for Run + Done buttons
-  queueBody.addEventListener('click', e => {
-    const runBtn = e.target.closest('.run-task-btn');
-    if (runBtn) {
-      const task = taskDataMap[runBtn.dataset.id];
-      if (task) runSingleTask(task);
-      return;
-    }
-    const doneBtn = e.target.closest('.done-task-btn');
-    if (doneBtn) markTaskDone(doneBtn.dataset.id, doneBtn);
-  });
 }
+
+// Delegate click for Run + Done buttons — attached once, survives re-renders.
+// (Previously attached inside renderQueue, so every loadQueue call stacked a new
+// listener, causing N clicks per Done press.)
+queueBody.addEventListener('click', e => {
+  const runBtn = e.target.closest('.run-task-btn');
+  if (runBtn) {
+    const task = taskDataMap[runBtn.dataset.id];
+    if (task) runSingleTask(task);
+    return;
+  }
+  const doneBtn = e.target.closest('.done-task-btn');
+  if (doneBtn) markTaskDone(doneBtn.dataset.id, doneBtn);
+});
 
 async function markTaskDone(taskId, btn) {
   if (btn) { btn.disabled = true; btn.textContent = '...'; }
