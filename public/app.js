@@ -224,16 +224,19 @@ queueBody.addEventListener('click', e => {
     return;
   }
   const doneBtn = e.target.closest('.done-task-btn');
-  if (doneBtn) markTaskDone(doneBtn.dataset.id, doneBtn);
+  if (doneBtn) {
+    const task = taskDataMap[doneBtn.dataset.id];
+    if (task) markTaskDone(task.id, task.user_id, doneBtn);
+  }
 });
 
-async function markTaskDone(taskId, btn) {
+async function markTaskDone(taskId, userId, btn) {
   if (btn) { btn.disabled = true; btn.textContent = '...'; }
   try {
     const res = await fetch('/api/mark-done', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ taskId }),
+      body: JSON.stringify({ taskId, userId }),
     });
     if (!res.ok) {
       const { error } = await res.json().catch(() => ({ error: 'Unknown error' }));

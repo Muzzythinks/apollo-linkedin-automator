@@ -212,13 +212,15 @@ app.post('/api/run-task', (req, res) => {
 
 app.post('/api/mark-done', async (req, res) => {
   const taskId = req.body.taskId;
+  const userId = req.body.userId;
   if (!taskId) return res.status(400).json({ error: 'taskId required' });
+  if (!userId) return res.status(400).json({ error: 'userId required' });
   try {
     const completed = loadProgress(PROGRESS_PATH);
     completed.add(taskId);
     saveProgress(PROGRESS_PATH, completed);
     const context = await getBrowser();
-    await markTaskDone(context, taskId, false, evt => broadcast(evt));
+    await markTaskDone(context, { id: taskId, user_id: userId }, false, evt => broadcast(evt));
     broadcast({ type: 'task_removed', taskId });
     res.json({ ok: true });
   } catch (err) {
