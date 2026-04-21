@@ -197,7 +197,8 @@ app.post('/api/mark-done', async (req, res) => {
     const completed = loadProgress(PROGRESS_PATH);
     completed.add(taskId);
     saveProgress(PROGRESS_PATH, completed);
-    await markTaskDone(getApiKey(), taskId, false, evt => broadcast(evt));
+    const context = await getBrowser();
+    await markTaskDone(context, taskId, false, evt => broadcast(evt));
     broadcast({ type: 'task_removed', taskId });
     res.json({ ok: true });
   } catch (err) {
