@@ -98,7 +98,7 @@ function autoScroll() {
   if (!logPaused) logEl.scrollTop = logEl.scrollHeight;
 }
 
-function appendLog(text, color = 'text-gray-400') {
+function appendLog(text, color = 'text-gray-600') {
   const line = document.createElement('div');
   line.className = color;
   line.textContent = text;
@@ -108,26 +108,26 @@ function appendLog(text, color = 'text-gray-400') {
 
 function logColor(message) {
   const m = message.toLowerCase();
-  if (m.includes('connection request sent') || m.includes('message sent') || m.includes('marked done')) return 'text-green-400';
-  if (m.includes('skipping') || m.includes('already') || m.includes('pending') || m.includes('404')) return 'text-yellow-400';
-  if (m.includes('error') || m.includes('fatal') || m.includes('not found') || m.includes('failed')) return 'text-red-400';
-  if (m.includes('dry-run')) return 'text-indigo-400';
-  if (m.includes('limit reached') || m.includes('limit (')) return 'text-orange-400';
-  return 'text-gray-400';
+  if (m.includes('connection request sent') || m.includes('message sent') || m.includes('marked done')) return 'text-emerald-600';
+  if (m.includes('skipping') || m.includes('already') || m.includes('pending') || m.includes('404')) return 'text-amber-600';
+  if (m.includes('error') || m.includes('fatal') || m.includes('not found') || m.includes('failed')) return 'text-red-600';
+  if (m.includes('dry-run')) return 'text-brand-600';
+  if (m.includes('limit reached') || m.includes('limit (')) return 'text-orange-600';
+  return 'text-gray-600';
 }
 
 function setRunning(running) {
   const allRowBtns = queueBody.querySelectorAll('button.run-task-btn, button.done-task-btn');
   if (running) {
     statusBadge.textContent = 'Running';
-    statusBadge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-green-900 text-green-300';
+    statusBadge.className = 'badge bg-emerald-50 text-emerald-700';
     btnStart.disabled = true;
     btnStop.disabled = false;
     statsBar.classList.remove('hidden');
     allRowBtns.forEach(b => { b.disabled = true; });
   } else {
     statusBadge.textContent = 'Idle';
-    statusBadge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-gray-700 text-gray-300';
+    statusBadge.className = 'badge bg-gray-100 text-gray-600';
     btnStart.disabled = false;
     btnStop.disabled = true;
     allRowBtns.forEach(b => { b.disabled = false; });
@@ -192,19 +192,19 @@ function renderQueue(tasks) {
     const url = contact.linkedin_url || '';
     const due = formatDue(t.due_at);
     tr.innerHTML = `
-      <td class="px-4 py-2 text-gray-600">${i + 1}</td>
-      <td class="px-4 py-2 text-gray-200 font-medium">${esc(contact.name || 'Unknown')}</td>
-      <td class="px-4 py-2">
-        <span class="px-1.5 py-0.5 rounded text-xs ${typeLabel === 'Connect' ? 'bg-indigo-900 text-indigo-300' : 'bg-teal-900 text-teal-300'}">${typeLabel}</span>
+      <td class="px-4 py-2.5 text-gray-400">${i + 1}</td>
+      <td class="px-4 py-2.5 text-gray-900 font-medium">${esc(contact.name || 'Unknown')}</td>
+      <td class="px-4 py-2.5">
+        <span class="badge ${typeLabel === 'Connect' ? 'bg-brand-50 text-brand-700' : 'bg-teal-50 text-teal-700'}">${typeLabel}</span>
       </td>
-      <td class="px-4 py-2 ${due.color} whitespace-nowrap" title="${esc(due.title)}">${esc(due.text)}</td>
-      <td class="px-4 py-2 text-gray-400 max-w-xs truncate">
-        ${url ? `<a href="${esc(url)}" target="_blank" class="hover:text-indigo-400 transition truncate block max-w-xs">${esc(url)}</a>` : '<span class="text-gray-700">—</span>'}
+      <td class="px-4 py-2.5 ${due.color} whitespace-nowrap" title="${esc(due.title)}">${esc(due.text)}</td>
+      <td class="px-4 py-2.5 text-gray-500 max-w-xs truncate">
+        ${url ? `<a href="${esc(url)}" target="_blank" class="hover:text-brand-600 hover:underline transition truncate block max-w-xs">${esc(url)}</a>` : '<span class="text-gray-300">—</span>'}
       </td>
-      <td class="px-4 py-2 text-gray-500 max-w-xs truncate">${esc((t.note || '').slice(0, 80))}</td>
-      <td class="px-4 py-2 space-x-1 whitespace-nowrap">
-        <button class="run-task-btn px-2 py-0.5 rounded bg-gray-700 hover:bg-indigo-700 text-gray-300 hover:text-white transition text-xs" data-id="${esc(t.id)}">Run</button>
-        <button class="done-task-btn px-2 py-0.5 rounded bg-gray-700 hover:bg-green-700 text-gray-300 hover:text-white transition text-xs" data-id="${esc(t.id)}" title="Mark this task done in Apollo without running the LinkedIn automation">Done</button>
+      <td class="px-4 py-2.5 text-gray-600 max-w-xs truncate">${esc((t.note || '').slice(0, 80))}</td>
+      <td class="px-4 py-2.5 space-x-1 whitespace-nowrap">
+        <button class="run-task-btn row-btn row-btn-run" data-id="${esc(t.id)}">Run</button>
+        <button class="done-task-btn row-btn row-btn-done" data-id="${esc(t.id)}" title="Mark this task done in Apollo without running the LinkedIn automation">Done</button>
       </td>
     `;
     rowMap[t.id] = tr;
@@ -265,17 +265,17 @@ function esc(str) {
 }
 
 function formatDue(iso) {
-  if (!iso) return { text: '—', title: '', color: 'text-gray-700' };
+  if (!iso) return { text: '—', title: '', color: 'text-gray-300' };
   const due = new Date(iso);
-  if (isNaN(due)) return { text: '—', title: '', color: 'text-gray-700' };
+  if (isNaN(due)) return { text: '—', title: '', color: 'text-gray-300' };
   const now = new Date();
   const diffDays = Math.floor((due - now) / 86400000);
   const title = due.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
   let text, color;
-  if (diffDays <= -1) { text = `${-diffDays}d overdue`; color = 'text-red-400'; }
-  else if (diffDays === 0) { text = 'today'; color = 'text-yellow-300'; }
-  else if (diffDays === 1) { text = 'tomorrow'; color = 'text-gray-300'; }
-  else if (diffDays < 7) { text = `in ${diffDays}d`; color = 'text-gray-400'; }
+  if (diffDays <= -1) { text = `${-diffDays}d overdue`; color = 'text-red-600'; }
+  else if (diffDays === 0) { text = 'today'; color = 'text-amber-600'; }
+  else if (diffDays === 1) { text = 'tomorrow'; color = 'text-gray-700'; }
+  else if (diffDays < 7) { text = `in ${diffDays}d`; color = 'text-gray-600'; }
   else { text = due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); color = 'text-gray-500'; }
   return { text, title, color };
 }
@@ -283,7 +283,7 @@ function formatDue(iso) {
 function highlightRow(taskId, cls) {
   const tr = rowMap[taskId];
   if (!tr) return;
-  Object.values(rowMap).forEach(r => r.classList.remove('bg-indigo-900/20', 'bg-green-900/20', 'bg-red-900/20', 'bg-yellow-900/20'));
+  Object.values(rowMap).forEach(r => r.classList.remove('bg-brand-50', 'bg-emerald-50', 'bg-red-50', 'bg-amber-50'));
   if (cls) tr.classList.add(cls);
   tr.scrollIntoView({ block: 'nearest' });
 }
@@ -344,11 +344,11 @@ function connectWS() {
       updateDailyUI(evt.counts);
     }
     if (evt.type === 'task_start' && (evt.taskId || evt.task)) {
-      highlightRow(evt.taskId || evt.task.id, 'bg-indigo-900/20');
-      statusBadge.textContent = `Running: task ${evt.index} of ${evt.total}`;
+      highlightRow(evt.taskId || evt.task.id, 'bg-brand-50');
+      statusBadge.textContent = `Running ${evt.index}/${evt.total}`;
     }
     if (evt.type === 'task_done') {
-      const colorMap = { sent: 'bg-green-900/20', failed: 'bg-red-900/20', skipped: 'bg-yellow-900/20', already_connected: 'bg-green-900/20' };
+      const colorMap = { sent: 'bg-emerald-50', failed: 'bg-red-50', skipped: 'bg-amber-50', already_connected: 'bg-emerald-50' };
       const taskId = evt.taskId || Object.keys(rowMap)[evt.index - 1];
       if (taskId) {
         // Sent, already-connected, and skipped (404/pending) are all marked

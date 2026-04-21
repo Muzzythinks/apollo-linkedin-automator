@@ -4,161 +4,193 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Apollo LinkedIn Automator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            brand: {
+              50: '#EEF2FF',
+              100: '#E0E7FF',
+              500: '#5B68EE',
+              600: '#4F5CE0',
+              700: '#4048C4',
+            },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; font-feature-settings: 'cv11', 'ss01'; }
+    .card { background: #fff; border: 1px solid #E5E7EB; border-radius: 10px; }
+    .card-header { padding: 12px 16px; border-bottom: 1px solid #F3F4F6; font-size: 12px; font-weight: 500; color: #6B7280; display: flex; justify-content: space-between; align-items: center; }
+    .btn-primary { background: #4F5CE0; color: #fff; font-weight: 500; padding: 6px 14px; border-radius: 6px; font-size: 13px; transition: background .12s; }
+    .btn-primary:hover:not(:disabled) { background: #4048C4; }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-secondary { background: #fff; color: #374151; font-weight: 500; padding: 6px 12px; border-radius: 6px; font-size: 13px; border: 1px solid #D1D5DB; transition: background .12s; }
+    .btn-secondary:hover:not(:disabled) { background: #F9FAFB; }
+    .btn-danger { background: #fff; color: #B91C1C; font-weight: 500; padding: 6px 12px; border-radius: 6px; font-size: 13px; border: 1px solid #FCA5A5; transition: background .12s; }
+    .btn-danger:hover:not(:disabled) { background: #FEF2F2; }
+    .btn-danger:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-ghost { color: #6B7280; font-size: 12px; padding: 4px 8px; border-radius: 4px; transition: color .12s, background .12s; }
+    .btn-ghost:hover { color: #111827; background: #F3F4F6; }
+    .input { background: #fff; border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 13px; color: #111827; }
+    .input:focus { outline: none; border-color: #4F5CE0; box-shadow: 0 0 0 3px rgba(79, 92, 224, .1); }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+    .row-btn { padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 500; border: 1px solid transparent; transition: all .12s; }
+    .row-btn-run { background: #fff; color: #4F5CE0; border-color: #C7D2FE; }
+    .row-btn-run:hover:not(:disabled) { background: #EEF2FF; }
+    .row-btn-done { background: #fff; color: #059669; border-color: #A7F3D0; }
+    .row-btn-done:hover:not(:disabled) { background: #ECFDF5; }
+    .row-btn:disabled { opacity: .4; cursor: not-allowed; }
+  </style>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen font-mono text-sm">
-  <div class="max-w-5xl mx-auto p-6 space-y-6">
+<body class="bg-gray-50 text-gray-900 min-h-screen text-sm">
+  <div class="max-w-6xl mx-auto p-6 space-y-5">
 
     <!-- Header -->
     <div class="flex items-center justify-between">
-      <h1 class="text-xl font-bold text-white">Apollo LinkedIn Automator</h1>
-      <div id="status-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-700 text-gray-300">Idle</div>
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-brand-600 flex items-center justify-center text-white font-bold text-sm">A</div>
+        <div>
+          <h1 class="text-base font-semibold text-gray-900">Apollo LinkedIn Automator</h1>
+          <p class="text-xs text-gray-500">Local task runner for LinkedIn connects &amp; messages</p>
+        </div>
+      </div>
+      <div id="status-badge" class="badge bg-gray-100 text-gray-600">Idle</div>
     </div>
 
     <!-- Session -->
-    <div class="bg-gray-900 rounded-xl p-4 border border-gray-800 flex items-center gap-4 flex-wrap">
+    <div class="card flex items-center gap-4 flex-wrap px-4 py-3">
       <div class="flex items-center gap-2">
         <div id="session-dot" class="w-2 h-2 rounded-full bg-red-500"></div>
-        <span id="session-label" class="text-xs text-gray-400">No session</span>
+        <span id="session-label" class="text-xs text-gray-500">No session</span>
       </div>
       <!-- idle state -->
       <div id="setup-idle" class="flex gap-2">
-        <button id="btn-connect"
-          class="px-4 py-1.5 rounded bg-green-700 hover:bg-green-600 text-white text-xs font-semibold transition">
-          Connect
-        </button>
+        <button id="btn-connect" class="btn-primary">Connect</button>
       </div>
       <!-- browser open state -->
       <div id="setup-open" class="hidden flex items-center gap-3 flex-wrap">
         <div class="flex items-center gap-2">
-          <svg id="setup-spinner" class="animate-spin w-3.5 h-3.5 text-yellow-400" fill="none" viewBox="0 0 24 24">
+          <svg id="setup-spinner" class="animate-spin w-3.5 h-3.5 text-amber-500" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
           </svg>
-          <span id="setup-instruction" class="text-xs text-yellow-300">
+          <span id="setup-instruction" class="text-xs text-amber-700">
             Step 1: Log in to Apollo. Step 2: Open a new tab and log in to LinkedIn. Then click Save.
           </span>
         </div>
-        <button id="btn-save-session"
-          class="flex items-center gap-1.5 px-4 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed">
+        <button id="btn-save-session" class="btn-primary flex items-center gap-1.5">
           <svg id="save-spinner" class="hidden animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
           </svg>
           <span id="save-btn-label">Save Session</span>
         </button>
-        <button id="btn-cancel-session"
-          class="px-3 py-1.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs transition">
-          Cancel
-        </button>
+        <button id="btn-cancel-session" class="btn-secondary">Cancel</button>
       </div>
     </div>
 
     <!-- Daily usage -->
-    <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
-      <div class="text-gray-500 text-xs mb-3">Today's usage</div>
-      <div class="flex gap-8">
-        <div>
-          <div class="text-xs text-gray-500 mb-1">Connects</div>
-          <div class="flex items-baseline gap-1.5">
-            <span id="daily-connects" class="text-2xl font-bold text-indigo-400">0</span>
-            <span class="text-gray-600">/</span>
-            <span id="daily-connects-limit" class="text-gray-400">30</span>
-          </div>
-          <div class="mt-1.5 h-1.5 w-40 bg-gray-800 rounded-full overflow-hidden">
-            <div id="daily-connects-bar" class="h-full bg-indigo-500 rounded-full transition-all" style="width:0%"></div>
-          </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="card px-5 py-4">
+        <div class="text-xs text-gray-500 font-medium mb-2">Connects today</div>
+        <div class="flex items-baseline gap-2">
+          <span id="daily-connects" class="text-3xl font-semibold text-gray-900">0</span>
+          <span class="text-gray-400 text-sm">of</span>
+          <span id="daily-connects-limit" class="text-gray-500 text-sm">30</span>
         </div>
-        <div>
-          <div class="text-xs text-gray-500 mb-1">Messages</div>
-          <div class="flex items-baseline gap-1.5">
-            <span id="daily-messages" class="text-2xl font-bold text-teal-400">0</span>
-            <span class="text-gray-600">/</span>
-            <span id="daily-messages-limit" class="text-gray-400">50</span>
-          </div>
-          <div class="mt-1.5 h-1.5 w-40 bg-gray-800 rounded-full overflow-hidden">
-            <div id="daily-messages-bar" class="h-full bg-teal-500 rounded-full transition-all" style="width:0%"></div>
-          </div>
+        <div class="mt-3 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+          <div id="daily-connects-bar" class="h-full bg-brand-500 rounded-full transition-all" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="card px-5 py-4">
+        <div class="text-xs text-gray-500 font-medium mb-2">Messages today</div>
+        <div class="flex items-baseline gap-2">
+          <span id="daily-messages" class="text-3xl font-semibold text-gray-900">0</span>
+          <span class="text-gray-400 text-sm">of</span>
+          <span id="daily-messages-limit" class="text-gray-500 text-sm">50</span>
+        </div>
+        <div class="mt-3 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+          <div id="daily-messages-bar" class="h-full bg-teal-500 rounded-full transition-all" style="width:0%"></div>
         </div>
       </div>
     </div>
 
     <!-- Controls -->
-    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800 space-y-4">
+    <div class="card px-5 py-4 space-y-3">
       <div class="flex flex-wrap items-end gap-4">
         <div class="space-y-1">
-          <label class="text-gray-400 text-xs">Max actions this run</label>
-          <input id="max-actions" type="number" min="1" max="100" value="30"
-            class="w-24 bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+          <label class="text-gray-600 text-xs font-medium">Max actions this run</label>
+          <input id="max-actions" type="number" min="1" max="100" value="30" class="input w-24">
         </div>
         <div class="space-y-1">
-          <label class="text-gray-400 text-xs">Daily connect limit</label>
-          <input id="max-daily-connects" type="number" min="1" max="100" value="30"
-            class="w-24 bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+          <label class="text-gray-600 text-xs font-medium">Daily connect limit</label>
+          <input id="max-daily-connects" type="number" min="1" max="100" value="30" class="input w-24">
         </div>
         <div class="space-y-1">
-          <label class="text-gray-400 text-xs">Daily message limit</label>
-          <input id="max-daily-messages" type="number" min="1" max="200" value="50"
-            class="w-24 bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+          <label class="text-gray-600 text-xs font-medium">Daily message limit</label>
+          <input id="max-daily-messages" type="number" min="1" max="200" value="50" class="input w-24">
         </div>
-        <label class="flex items-center gap-2 cursor-pointer pb-1">
-          <input id="dry-run" type="checkbox" class="w-4 h-4 accent-indigo-500">
-          <span class="text-gray-300">Dry run</span>
+        <label class="flex items-center gap-2 cursor-pointer pb-1.5">
+          <input id="dry-run" type="checkbox" class="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+          <span class="text-gray-700 text-sm">Dry run</span>
         </label>
-        <button id="btn-start"
-          class="px-5 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed">
-          Start
-        </button>
-        <button id="btn-stop" disabled
-          class="px-5 py-1.5 rounded bg-red-700 hover:bg-red-600 text-white font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed">
-          Stop
-        </button>
-        <button id="btn-refresh"
-          class="px-4 py-1.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 transition text-xs">
-          Refresh queue
-        </button>
+        <div class="flex-1"></div>
+        <div class="flex gap-2">
+          <button id="btn-refresh" class="btn-secondary">Refresh</button>
+          <button id="btn-stop" disabled class="btn-danger">Stop</button>
+          <button id="btn-start" class="btn-primary">Start run</button>
+        </div>
       </div>
 
       <!-- Run stats bar -->
-      <div id="stats-bar" class="hidden flex gap-6 text-xs pt-1">
-        <span class="text-green-400">Sent <span id="stat-sent" class="font-bold">0</span></span>
-        <span class="text-yellow-400">Skipped <span id="stat-skipped" class="font-bold">0</span></span>
-        <span class="text-red-400">Failed <span id="stat-failed" class="font-bold">0</span></span>
-        <span class="text-gray-400">Total <span id="stat-total" class="font-bold">0</span></span>
+      <div id="stats-bar" class="hidden flex gap-5 text-xs pt-2 border-t border-gray-100">
+        <span class="text-gray-600">Sent <span id="stat-sent" class="font-semibold text-emerald-600">0</span></span>
+        <span class="text-gray-600">Skipped <span id="stat-skipped" class="font-semibold text-amber-600">0</span></span>
+        <span class="text-gray-600">Failed <span id="stat-failed" class="font-semibold text-red-600">0</span></span>
+        <span class="text-gray-600">Total <span id="stat-total" class="font-semibold text-gray-900">0</span></span>
       </div>
-    </div>
-
-    <!-- Live log -->
-    <div class="bg-gray-900 rounded-xl border border-gray-800">
-      <div class="px-4 py-2 border-b border-gray-800 text-gray-400 text-xs flex justify-between items-center">
-        <span>Live log</span>
-        <button id="btn-clear-log" class="text-gray-600 hover:text-gray-400 transition">Clear</button>
-      </div>
-      <div id="log" class="h-48 overflow-y-auto p-4 space-y-0.5 text-xs leading-5"></div>
     </div>
 
     <!-- Queue table -->
-    <div class="bg-gray-900 rounded-xl border border-gray-800">
-      <div class="px-4 py-2 border-b border-gray-800 text-gray-400 text-xs flex justify-between items-center">
-        <span>Task queue — <span id="queue-count">loading...</span></span>
+    <div class="card">
+      <div class="card-header">
+        <span>Task queue · <span id="queue-count" class="text-gray-400">loading…</span></span>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-xs">
           <thead>
-            <tr class="border-b border-gray-800 text-gray-500">
-              <th class="px-4 py-2 text-left w-8">#</th>
-              <th class="px-4 py-2 text-left">Name</th>
-              <th class="px-4 py-2 text-left w-24">Type</th>
-              <th class="px-4 py-2 text-left w-20">Due</th>
-              <th class="px-4 py-2 text-left">LinkedIn URL</th>
-              <th class="px-4 py-2 text-left">Note</th>
-              <th class="px-4 py-2 text-left w-16"></th>
+            <tr class="text-gray-500 border-b border-gray-100">
+              <th class="px-4 py-2.5 text-left font-medium w-8">#</th>
+              <th class="px-4 py-2.5 text-left font-medium">Name</th>
+              <th class="px-4 py-2.5 text-left font-medium w-24">Type</th>
+              <th class="px-4 py-2.5 text-left font-medium w-20">Due</th>
+              <th class="px-4 py-2.5 text-left font-medium">LinkedIn URL</th>
+              <th class="px-4 py-2.5 text-left font-medium">Note</th>
+              <th class="px-4 py-2.5 text-left font-medium w-28"></th>
             </tr>
           </thead>
-          <tbody id="queue-body" class="divide-y divide-gray-800/50"></tbody>
+          <tbody id="queue-body" class="divide-y divide-gray-100"></tbody>
         </table>
-        <div id="queue-empty" class="hidden px-4 py-8 text-center text-gray-600">No tasks found.</div>
+        <div id="queue-empty" class="hidden px-4 py-10 text-center text-gray-400 text-sm">No tasks found.</div>
       </div>
+    </div>
+
+    <!-- Live log -->
+    <div class="card">
+      <div class="card-header">
+        <span>Live log</span>
+        <button id="btn-clear-log" class="btn-ghost">Clear</button>
+      </div>
+      <div id="log" class="h-40 overflow-y-auto px-4 py-3 space-y-0.5 text-xs leading-5 font-mono bg-gray-50"></div>
     </div>
 
   </div>
