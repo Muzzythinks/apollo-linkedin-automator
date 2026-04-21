@@ -329,7 +329,15 @@ function connectWS() {
     if (evt.type === 'task_done') {
       const colorMap = { sent: 'bg-green-900/20', failed: 'bg-red-900/20', skipped: 'bg-yellow-900/20', already_connected: 'bg-green-900/20' };
       const taskId = evt.taskId || Object.keys(rowMap)[evt.index - 1];
-      if (taskId) highlightRow(taskId, colorMap[evt.outcome] || '');
+      if (taskId) {
+        // Successful outcomes are now complete in Apollo, so clear them from
+        // the visible queue. Keep failed rows visible for inspection.
+        if (evt.outcome === 'sent' || evt.outcome === 'already_connected') {
+          removeRow(taskId);
+        } else {
+          highlightRow(taskId, colorMap[evt.outcome] || '');
+        }
+      }
     }
     if (evt.type === 'task_removed' && evt.taskId) {
       removeRow(evt.taskId);
