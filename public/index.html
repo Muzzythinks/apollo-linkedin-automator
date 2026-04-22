@@ -48,6 +48,8 @@
     .row-btn-run:hover:not(:disabled) { background: #EEF2FF; }
     .row-btn-done { background: #fff; color: #059669; border-color: #A7F3D0; }
     .row-btn-done:hover:not(:disabled) { background: #ECFDF5; }
+    .row-btn-preview { background: #fff; color: #6B7280; border-color: #D1D5DB; }
+    .row-btn-preview:hover:not(:disabled) { background: #F9FAFB; color: #111827; }
     .row-btn:disabled { opacity: .4; cursor: not-allowed; }
   </style>
 </head>
@@ -194,6 +196,28 @@
     </div>
 
   </div>
+
+  <!-- Message preview / edit modal -->
+  <div id="msg-modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl w-full max-w-2xl shadow-xl border border-gray-200">
+      <div class="px-5 py-3.5 border-b border-gray-100 flex justify-between items-center">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900">Message</h3>
+          <p id="msg-modal-contact" class="text-xs text-gray-500"></p>
+        </div>
+        <button id="msg-modal-close" class="btn-ghost text-xl leading-none px-2">&times;</button>
+      </div>
+      <div class="px-5 py-4 space-y-2">
+        <textarea id="msg-modal-body" class="input w-full h-56 font-sans resize-none" placeholder="Loading…"></textarea>
+        <div id="msg-modal-status" class="text-xs h-4"></div>
+      </div>
+      <div class="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
+        <button id="msg-modal-cancel" class="btn-secondary">Cancel</button>
+        <button id="msg-modal-save" class="btn-primary" disabled>Save to Apollo</button>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

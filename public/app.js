@@ -203,6 +203,7 @@ function renderQueue(tasks) {
       </td>
       <td class="px-4 py-2.5 text-gray-600 max-w-xs truncate">${esc((t.note || '').slice(0, 80))}</td>
       <td class="px-4 py-2.5 space-x-1 whitespace-nowrap">
+        ${t.type === 'linkedin_step_message' ? `<button class="preview-task-btn row-btn row-btn-preview" data-id="${esc(t.id)}">See message</button>` : ''}
         <button class="run-task-btn row-btn row-btn-run" data-id="${esc(t.id)}">Run</button>
         <button class="done-task-btn row-btn row-btn-done" data-id="${esc(t.id)}" title="Mark this task done in Apollo without running the LinkedIn automation">Done</button>
       </td>
@@ -217,6 +218,12 @@ function renderQueue(tasks) {
 // (Previously attached inside renderQueue, so every loadQueue call stacked a new
 // listener, causing N clicks per Done press.)
 queueBody.addEventListener('click', e => {
+  const previewBtn = e.target.closest('.preview-task-btn');
+  if (previewBtn) {
+    const task = taskDataMap[previewBtn.dataset.id];
+    if (task) openMessageModal(task);
+    return;
+  }
   const runBtn = e.target.closest('.run-task-btn');
   if (runBtn) {
     const task = taskDataMap[runBtn.dataset.id];
@@ -227,6 +234,77 @@ queueBody.addEventListener('click', e => {
   if (doneBtn) {
     const task = taskDataMap[doneBtn.dataset.id];
     if (task) markTaskDone(task.id, task.user_id, doneBtn);
+  }
+});
+
+// Message preview / edit modal
+const msgModal = document.getElementById('msg-modal');
+const msgModalBody = document.getElementById('msg-modal-body');
+const msgModalContact = document.getElementById('msg-modal-contact');
+const msgModalStatus = document.getElementById('msg-modal-status');
+const msgModalSave = document.getElementById('msg-modal-save');
+const msgModalCancel = document.getElementById('msg-modal-cancel');
+const msgModalClose = document.getElementById('msg-modal-close');
+let currentPreviewTaskId = null;
+let currentPreviewOriginal = '';
+
+function setModalStatus(text, color) {
+  msgModalStatus.textContent = text || '';
+  msgModalStatus.className = `text-xs h-4 ${color || 'text-gray-400'}`;
+}
+
+async function openMessageModal(task) {
+  currentPreviewTaskId = task.id;
+  currentPreviewOriginal = '';
+  msgModalContact.textContent = `${task.contact?.name || 'Unknown'} · ${task.contact?.title || ''}`.trim().replace(/ · $/, '');
+  msgModalBody.value = '';
+  msgModalBody.placeholder = 'Loading…';
+  msgModalSave.disabled = true;
+  setModalStatus('');
+  msgModal.classList.remove('hidden');
+  try {
+    const res = await fetch(`/api/task-message/${encodeURIComponent(task.id)}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    msgModalBody.value = data.body || '';
+    currentPreviewOriginal = data.body || '';
+    msgModalBody.placeholder = '';
+    msgModalSave.disabled = false;
+    if (!data.body) setModalStatus('No message body on this task yet — edit and save to set one.', 'text-amber-600');
+  } catch (err) {
+    setModalStatus(`Error: ${err.message}`, 'text-red-600');
+  }
+}
+
+function closeMessageModal() {
+  msgModal.classList.add('hidden');
+  currentPreviewTaskId = null;
+}
+
+msgModalClose.addEventListener('click', closeMessageModal);
+msgModalCancel.addEventListener('click', closeMessageModal);
+msgModal.addEventListener('click', e => { if (e.target === msgModal) closeMessageModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !msgModal.classList.contains('hidden')) closeMessageModal(); });
+
+msgModalSave.addEventListener('click', async () => {
+  if (!currentPreviewTaskId) return;
+  const body = msgModalBody.value;
+  if (body === currentPreviewOriginal) { closeMessageModal(); return; }
+  msgModalSave.disabled = true;
+  setModalStatus('Saving…', 'text-gray-500');
+  try {
+    const res = await fetch(`/api/task-message/${encodeURIComponent(currentPreviewTaskId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    setModalStatus('Saved.', 'text-emerald-600');
+    setTimeout(closeMessageModal, 600);
+  } catch (err) {
+    setModalStatus(`Error: ${err.message}`, 'text-red-600');
+    msgModalSave.disabled = false;
   }
 });
 

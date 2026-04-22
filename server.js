@@ -8,7 +8,7 @@ const { chromium } = require('playwright');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { runTasks, fetchLinkedInTasks, markTaskDone, loadProgress, saveProgress, loadDailyCounts } = require('./lib/runner');
+const { runTasks, fetchLinkedInTasks, fetchTaskDetail, updateTaskMessage, markTaskDone, loadProgress, saveProgress, loadDailyCounts } = require('./lib/runner');
 
 const PROFILE_DIR = path.join(__dirname, 'chrome-profile');
 const PROFILE_SAVED_FLAG = path.join(PROFILE_DIR, '.saved');
@@ -208,6 +208,31 @@ app.post('/api/run-task', (req, res) => {
     specificTasks: [req.body.task],
   });
   res.json({ ok: true });
+});
+
+app.get('/api/task-message/:id', async (req, res) => {
+  try {
+    const context = await getBrowser();
+    const detail = await fetchTaskDetail(context, req.params.id);
+    const body = detail.linkedin_emailer_template?.body_text
+      || detail.standalone_outreach_task_message?.body_text
+      || '';
+    res.json({ body, contact: detail.contact?.name || '' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/task-message/:id', async (req, res) => {
+  const body = req.body?.body;
+  if (typeof body !== 'string') return res.status(400).json({ error: 'body (string) required' });
+  try {
+    const context = await getBrowser();
+    await updateTaskMessage(context, req.params.id, body);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/mark-done', async (req, res) => {
